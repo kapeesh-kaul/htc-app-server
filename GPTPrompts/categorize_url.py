@@ -24,10 +24,34 @@ def categorize_urls(urls: List[Dict[str, Any]]) -> Dict[str, Any]:
     categorization_prompt = """
     **Input TypeScript Interface:**
     \`\`\`typescript
-    interface URLData {
-      url: string;
-      title: string;
-      raw: string;
+    interface MutedInfo {
+        muted: boolean;
+    }
+
+    interface Tab {
+        userEmail: string;
+        id: number;
+        url: string;
+        title?: string;
+        active?: boolean;
+        timeStamp: number;
+        icon?: string;
+        audible?: boolean;
+        autoDiscardable?: boolean;
+        discarded?: boolean;
+        favIconUrl?: string;
+        groupId?: number;
+        height?: number;
+        highlighted?: boolean;
+        incognito?: boolean;
+        index?: number;
+        lastAccessed?: number;
+        mutedInfo?: MutedInfo;
+        pinned?: boolean;
+        selected?: boolean;
+        status?: "unloaded" | "loading" | "complete";
+        width?: number;
+        windowId?: number;
     }
 
     interface URLAssessment {

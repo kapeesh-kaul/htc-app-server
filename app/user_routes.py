@@ -2,7 +2,8 @@ from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
-from .models import MutedInfo, Tab
+from app.models import Tab
+from app.models.Tab import MutedInfo
 
 user_routes = Blueprint("user_routes", __name__)
 

@@ -25,7 +25,7 @@ CATEGORIES = [
 ]
 
 
-class Urls(Document):
+class Url(Document):
     url = StringField(required=True, unique=True)  # URL should be unique
     rawText = StringField()  # Raw text data associated with the URL
     topic = StringField(
