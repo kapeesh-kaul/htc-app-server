@@ -60,3 +60,4 @@ def store_tabs_snapshot():
             ),
             500,
         )
+    

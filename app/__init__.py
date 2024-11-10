@@ -4,6 +4,9 @@ from flask import Flask
 from flask_cors import CORS
 from mongoengine import connect
 
+from pymongo import MongoClient
+import pandas as pd
+
 from .openai_routes import openai_routes
 from .routes import main_routes
 from .user_routes import user_routes
@@ -21,6 +24,8 @@ def create_app():
         "MONGO_URI"
     )  # Set your MongoDB URI as an environment variable
     connect(host=mongo_uri)
+
+        
 
     # Register the blueprints for routes
     app.register_blueprint(main_routes)
