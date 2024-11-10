@@ -1,18 +1,9 @@
-from flask import Flask
-from flask import render_template
+from flask import Blueprint, request, jsonify
 from GPTPrompts import verify_community_guidelines, process_pronouns
-from flask import request, jsonify
-import json
-from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)
+openai_routes = Blueprint('openai_routes', __name__)
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-@app.route('/verify_community_guidelines', methods=['POST'])
+@openai_routes.route('/verify_community_guidelines', methods=['POST'])
 def verify():
     data = request.json
     if not data or 'text' not in data:
@@ -27,8 +18,8 @@ def verify():
         # Log the exception and return a JSON error message
         print(f"Error in verify_community_guidelines: {e}")
         return jsonify({'error': 'An error occurred while processing the request', 'details': str(e)}), 500
-    
-@app.route('/process_pronouns', methods=['POST'])
+
+@openai_routes.route('/process_pronouns', methods=['POST'])
 def process_pronouns_endpoint():
     data = request.json
 
@@ -47,7 +38,3 @@ def process_pronouns_endpoint():
         # Handle errors and provide a response
         print(f"Error in process_pronouns: {e}")
         return jsonify({'error': 'An error occurred while processing the request', 'details': str(e)}), 500
-
-if __name__ == '__main__':
-    app.run(debug=True)
-

@@ -75,7 +75,7 @@
 
     <div class="section">
         <h3>1. Chat Moderation Endpoint</h3>
-        <p><strong>URL:</strong> <code>/verify_community_guidelines</code></p>
+        <p><strong>URL:</strong> <code>/openai/verify_community_guidelines</code></p>
         <p><strong>Method:</strong> POST</p>
         <p><strong>Content-Type:</strong> application/json</p>
         <p>This endpoint accepts a list of messages for moderation, checking each for inappropriate content.</p>
@@ -124,7 +124,7 @@
     ]
 };
 
-fetch("http://https://htc-app-server.vercel.app/verify_community_guidelines", {
+fetch("http://https://htc-app-server.vercel.app/openai/verify_community_guidelines", {
     method: "POST",
     headers: {
         "Content-Type": "application/json"
@@ -138,7 +138,7 @@ fetch("http://https://htc-app-server.vercel.app/verify_community_guidelines", {
 
     <div class="section">
         <h3>2. Pronoun Processing Endpoint</h3>
-        <p><strong>URL:</strong> <code>/process_pronouns</code></p>
+        <p><strong>URL:</strong> <code>/openai/process_pronouns</code></p>
         <p><strong>Method:</strong> POST</p>
         <p><strong>Content-Type:</strong> application/json</p>
         <p>This endpoint allows you to replace pronouns in a message based on user preferences.</p>
@@ -235,7 +235,7 @@ fetch("http://https://htc-app-server.vercel.app/verify_community_guidelines", {
     }
 };
 
-fetch("http://https://htc-app-server.vercel.app/process_pronouns", {
+fetch("http://https://htc-app-server.vercel.app/openai/process_pronouns", {
     method: "POST",
     headers: {
         "Content-Type": "application/json"
