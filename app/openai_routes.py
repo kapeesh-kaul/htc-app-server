@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from GPTPrompts import verify_community_guidelines, process_pronouns
+from GPTPrompts import verify_community_guidelines, process_pronouns, moderate_chat
 
 openai_routes = Blueprint('openai_routes', __name__)
 
@@ -37,4 +37,23 @@ def process_pronouns_endpoint():
     except Exception as e:
         # Handle errors and provide a response
         print(f"Error in process_pronouns: {e}")
+        return jsonify({'error': 'An error occurred while processing the request', 'details': str(e)}), 500
+
+@openai_routes.route('/moderate_chat', methods=['POST'])
+def moderate_chat_endpoint():
+    data = request.json
+
+    # Validate input
+    if not data or 'messages' not in data:
+        return jsonify({'error': 'Invalid input. Please provide a "messages" field.'}), 400
+
+    messages = data['messages']
+
+    try:
+        # Call the moderate_chat function with the provided messages
+        result = moderate_chat(messages)
+        return jsonify(result)
+    except Exception as e:
+        # Handle errors and provide a response
+        print(f"Error in moderate_chat: {e}")
         return jsonify({'error': 'An error occurred while processing the request', 'details': str(e)}), 500
