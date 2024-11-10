@@ -7,18 +7,245 @@
     <style>
         body {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
-            margin: 0;
             font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background-color: #f3f3f3;
+            color: #333;
         }
         h1 {
             text-align: center;
+            color: #4a90e2;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            color: #4a90e2;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        h4 {
+            color: #4a4a4a;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        p {
+            margin: 5px 0;
+        }
+        code {
+            font-family: "Courier New", monospace;
+            background-color: #eef5ff;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        pre {
+            background-color: #eef5ff;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-width: 100%;
+            margin: 10px 0;
+            border: 1px solid #dce4f7;
+        }
+        .section {
+            width: 100%;
+            max-width: 800px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Hello, welcome to htc-app-server!</h1>
+    <h1>Welcome to HTC App Server!</h1>
+
+    <div class="section">
+        <h2>API Guide</h2>
+        <p>This guide provides information on how to use the API endpoints for moderation and pronoun processing.</p>
+    </div>
+
+    <div class="section">
+        <h3>1. Chat Moderation Endpoint</h3>
+        <p><strong>URL:</strong> <code>/verify_community_guidelines</code></p>
+        <p><strong>Method:</strong> POST</p>
+        <p><strong>Content-Type:</strong> application/json</p>
+        <p>This endpoint accepts a list of messages for moderation, checking each for inappropriate content.</p>
+
+        <h4>Input Format</h4>
+        <pre><code>{
+    "text": [
+        "This is the first message.",
+        "This message might contain inappropriate content."
+    ]
+}</code></pre>
+
+        <h4>Output Format</h4>
+        <pre><code>{
+    "analysis_timestamp": "2023-10-21T10:10:00Z",
+    "total_messages_analyzed": 2,
+    "assessments": {
+        "1": {
+            "message_id": "1",
+            "content": "This is the first message.",
+            "assessment": {
+                "is_inappropriate": false,
+                "flags": [],
+                "feedback": "This message complies with community guidelines."
+            },
+            "timestamp": "2023-10-21T10:00:00Z"
+        },
+        "2": {
+            "message_id": "2",
+            "content": "This message might contain inappropriate content.",
+            "assessment": {
+                "is_inappropriate": true,
+                "flags": ["Sensitive Topics"],
+                "feedback": "This message discusses sensitive topics."
+            },
+            "timestamp": "2023-10-21T10:05:00Z"
+        }
+    }
+}</code></pre>
+
+        <h4>JavaScript Example</h4>
+        <pre><code>const moderationData = {
+    text: [
+        "This is the first message.",
+        "This message might contain inappropriate content."
+    ]
+};
+
+fetch("http://&lt;your-server-url&gt;/verify_community_guidelines", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify(moderationData)
+})
+    .then(response => response.json())
+    .then(data => console.log("Moderation response:", data))
+    .catch(error => console.error("Error:", error));</code></pre>
+    </div>
+
+    <div class="section">
+        <h3>2. Pronoun Processing Endpoint</h3>
+        <p><strong>URL:</strong> <code>/process_pronouns</code></p>
+        <p><strong>Method:</strong> POST</p>
+        <p><strong>Content-Type:</strong> application/json</p>
+        <p>This endpoint allows you to replace pronouns in a message based on user preferences.</p>
+
+        <h4>Input Format</h4>
+        <pre><code>{
+    "message_input": {
+        "messageId": "123",
+        "content": "They are working on their project.",
+        "timestamp": "2023-10-21T10:00:00Z",
+        "mentions": {
+            "user123": {
+                "startIndex": 0,
+                "endIndex": 4
+            }
+        }
+    },
+    "users": {
+        "user123": {
+            "userId": "user123",
+            "username": "Alex",
+            "pronouns": {
+                "subject": "they",
+                "object": "them",
+                "possessive": "their",
+                "reflexive": "themselves"
+            }
+        }
+    }
+}</code></pre>
+
+        <h4>Output Format</h4>
+        <pre><code>{
+    "original": {
+        "content": "They are working on their project.",
+        "mentions": ["user123"]
+    },
+    "processed": {
+        "content": "Alex is working on Alex's project.",
+        "replacements": [
+            {
+                "original": "They",
+                "replaced": "Alex",
+                "position": 0,
+                "userId": "user123"
+            },
+            {
+                "original": "their",
+                "replaced": "Alex's",
+                "position": 21,
+                "userId": "user123"
+            }
+        ]
+    },
+    "users": {
+        "user123": {
+            "userId": "user123",
+            "username": "Alex",
+            "pronouns": {
+                "subject": "they",
+                "object": "them",
+                "possessive": "their",
+                "reflexive": "themselves"
+            }
+        }
+    },
+    "timestamp": "2023-10-21T10:00:00Z"
+}</code></pre>
+
+        <h4>JavaScript Example</h4>
+        <pre><code>const pronounData = {
+    message_input: {
+        messageId: "123",
+        content: "They are working on their project.",
+        timestamp: "2023-10-21T10:00:00Z",
+        mentions: {
+            "user123": {
+                startIndex: 0,
+                "endIndex": 4
+            }
+        }
+    },
+    users: {
+        "user123": {
+            userId: "user123",
+            username: "Alex",
+            pronouns: {
+                subject: "they",
+                object: "them",
+                possessive: "their",
+                reflexive: "themselves"
+            }
+        }
+    }
+};
+
+fetch("http://&lt;your-server-url&gt;/process_pronouns", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify(pronounData)
+})
+    .then(response => response.json())
+    .then(data => console.log("Pronoun Processing response:", data))
+    .catch(error => console.error("Error:", error));</code></pre>
+    </div>
+
 </body>
 </html>
