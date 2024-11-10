@@ -30,6 +30,6 @@ def create_app():
     # Register the blueprints for routes
     app.register_blueprint(main_routes)
     app.register_blueprint(openai_routes, url_prefix="/openai")
-    app.register_blueprint(user_routes)
+    app.register_blueprint(user_routes, url_prefix="/user")
 
     return app

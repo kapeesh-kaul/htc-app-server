@@ -109,6 +109,10 @@ def categorize_urls(urls: List[Dict[str, Any]]) -> Dict[str, Any]:
         windowId?: number;
         category: Category;  // New category field based on predefined categories
     }
+
+    interface OutputResponse {
+        tabs: [Tab]
+    }
     \`\`\`
 
     You are a browser tab categorizer/classifier. Based on the input interface provided to you, 
@@ -129,16 +133,16 @@ def categorize_urls(urls: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     **Important Considerations:**
     * **Keywords extraction**: Extract relevant keywords from title and content for better categorization.
-    * **Output structure**: Ensure output follows the URLCategorization interface.
-    * **Non-omittance**: Ensure all URLs are properly categorized.
+    * **Output structure**: Ensure output follows the OutputResponse interface.
+    * **Non-omittance**: Ensure all Tabs are properly categorized.
     * **Output format**: Ensure to output only JSON and nothing else.
     """
 
     # Combine URLs into JSON format for the API call
-    content = json.dumps({"urls": urls}, indent=2)
+    content = json.dumps({"tabs": urls}, indent=2)
 
     # Pass the prompt and content to parse_categorization
     parsed_response = parse_categorization(categorization_prompt, content)
 
     # Clean and parse the response
-    return json.loads(parsed_response.strip("```json\n").strip("```"))
+    return json.loads(parsed_response.strip("```json\n").strip("```"))["tabs"]

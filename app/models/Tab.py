@@ -39,7 +39,7 @@ class MutedInfo(EmbeddedDocument):
 
 class Tab(Document):
     userEmail = StringField(required=True)
-    id = IntField(required=True, unique=True)
+    tabId = IntField(required=True, unique=True)
     url = StringField(required=True)
     title = StringField()
     active = BooleanField(default=False)
