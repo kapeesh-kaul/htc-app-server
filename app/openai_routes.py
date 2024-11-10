@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from GPTPrompts import verify_community_guidelines, process_pronouns, analyze_chat
+from GPTPrompts import verify_community_guidelines, process_pronouns, analyze_chat, categorize_urls
 
 openai_routes = Blueprint('openai_routes', __name__)
 
@@ -54,5 +54,22 @@ def analyze_chat_endpoint():
     except Exception as e:
         # Handle errors and provide a response
         print(f"Error in analyze_chat: {e}")
+        return jsonify({'error': 'An error occurred while processing the request', 'details': str(e)}), 500
+    
+@openai_routes.route('/categorize_urls', methods=['POST'])
+def categorize_urls_endpoint():
+    data = request.json
+    if not data or 'urls' not in data:
+        return jsonify({'error': 'Invalid input. Please provide a "urls" field.'}), 400
+
+    urls = data['urls']
+
+    try:
+        # Call the categorize_urls function with the provided URLs
+        result = categorize_urls(urls)
+        return jsonify(result)
+    except Exception as e:
+        # Handle errors and provide a response
+        print(f"Error in categorize_urls: {e}")
         return jsonify({'error': 'An error occurred while processing the request', 'details': str(e)}), 500
     
