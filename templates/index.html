@@ -246,6 +246,85 @@ fetch("http://https://htc-app-server.vercel.app/openai/process_pronouns", {
     .then(data => console.log("Pronoun Processing response:", data))
     .catch(error => console.error("Error:", error));</code></pre>
     </div>
+    <div class="section">
+        <h3>3. Chat Moderation Endpoint</h3>
+        <p><strong>URL:</strong> <code>/openai/moderate_chat</code></p>
+        <p><strong>Method:</strong> POST</p>
+        <p><strong>Content-Type:</strong> application/json</p>
+        <p>This endpoint accepts a list of messages for moderation, checking each for inappropriate content according to predefined guidelines.</p>
+    
+        <h4>Input Format</h4>
+        <pre><code>{
+        "messages": [
+            {
+                "message_id": "1",
+                "content": "I don't like this topic.",
+                "timestamp": "2023-10-21T10:00:00Z"
+            },
+            {
+                "message_id": "2",
+                "content": "That was really disrespectful.",
+                "timestamp": "2023-10-21T10:05:00Z"
+            }
+        ]
+    }</code></pre>
+    
+        <h4>Output Format</h4>
+        <pre><code>{
+        "analysis_timestamp": "2023-10-21T10:10:00Z",
+        "total_messages_analyzed": 2,
+        "assessments": {
+            "1": {
+                "message_id": "1",
+                "content": "I don't like this topic.",
+                "assessment": {
+                    "is_inappropriate": false,
+                    "flags": [],
+                    "feedback": "This message complies with community guidelines."
+                },
+                "timestamp": "2023-10-21T10:00:00Z"
+            },
+            "2": {
+                "message_id": "2",
+                "content": "That was really disrespectful.",
+                "assessment": {
+                    "is_inappropriate": true,
+                    "flags": ["Disrespectful Language"],
+                    "feedback": "This message contains disrespectful language."
+                },
+                "timestamp": "2023-10-21T10:05:00Z"
+            }
+        }
+    }</code></pre>
+    
+        <h4>JavaScript Example</h4>
+        <pre><code>const moderationData = {
+        messages: [
+            {
+                message_id: "1",
+                content: "I don't like this topic.",
+                timestamp: "2023-10-21T10:00:00Z"
+            },
+            {
+                message_id: "2",
+                content: "That was really disrespectful.",
+                timestamp: "2023-10-21T10:05:00Z"
+            }
+        ]
+    };
+    
+    fetch("http://&lt;your-server-url&gt;/openai/moderate_chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(moderationData)
+    })
+        .then(response => response.json())
+        .then(data => console.log("Moderation response:", data))
+        .catch(error => console.error("Error:", error));</code></pre>
+    </div>
+ 
 
 </body>
 </html>
