@@ -1,22 +1,23 @@
-import openai
+from openai import OpenAI
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List
+import os
 
-# Set up your OpenAI API key
-openai.api_key = 'your-api-key'
-
-def parse_prompt(prompt: str) -> str:
-    response = openai.Completion.create(
-        mdoel = "gpt-4o",
-        prompt=prompt,
-        max_tokens=1500,
-        n=1,
-        stop=None,
-        temperature=0.7,
+def parse_prompt(prompt: str, content: str) -> str:
+    client = OpenAI(
+        api_key=os.getenv('OPENAI_API_KEY')
     )
-    return response.choices[0].text.strip()
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": content}
+        ]
+    )
+    return response.choices[0].message.content.strip()
 
-def verify_community_guidelines() -> Dict[str, Any]:
+
+def verify_community_guidelines(text: List[str]) -> Dict[str, Any]:
     moderation_prompt = """
     **Input TypeScript Interface:**
     \`\`\`typescript
@@ -65,11 +66,12 @@ def verify_community_guidelines() -> Dict[str, Any]:
     * **Non-omittance**: Ensure all messages are properly assessed and categorized.
     * **Output format**: Ensure to output only JSON and nothing else.
     """
-
-    parsed_response = parse_prompt(moderation_prompt)
-    parsed_json = json.loads(parsed_response)
-    return parsed_json
-
-if __name__ == "__main__":
-    result = verify_community_guidelines()
-    print(json.dumps(result, indent=2))
+    
+    # Join list elements into a single string for the API call
+    content = "\n".join(text)
+    
+    # Pass the prompt and combined content to parse_prompt
+    parsed_response = parse_prompt(moderation_prompt, content)
+    
+    # Clean and parse the response
+    return json.loads(parsed_response.strip("```json\n").strip("```"))
