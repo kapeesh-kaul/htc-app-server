@@ -1,10 +1,12 @@
-from openai import OpenAI
 import json
-from typing import Dict, Any, List
 import os
+from typing import Any, Dict, List
+
+from openai import OpenAI
 
 # Set up your OpenAI API key from environment variable
-api_key = os.getenv('OPENAI_API_KEY')
+api_key = os.getenv("OPENAI_API_KEY")
+
 
 def parse_categorization(prompt: str, content: str) -> str:
     client = OpenAI(api_key=api_key)
@@ -12,10 +14,11 @@ def parse_categorization(prompt: str, content: str) -> str:
         model="gpt-4o",
         messages=[
             {"role": "system", "content": prompt},
-            {"role": "user", "content": content}
-        ]
+            {"role": "user", "content": content},
+        ],
     )
     return response.choices[0].message.content.strip()
+
 
 def categorize_urls(urls: List[Dict[str, Any]]) -> Dict[str, Any]:
     categorization_prompt = """
@@ -73,39 +76,10 @@ def categorize_urls(urls: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
 
     # Combine URLs into JSON format for the API call
-    content = json.dumps({
-        "urls": urls
-    }, indent=2)
+    content = json.dumps({"urls": urls}, indent=2)
 
     # Pass the prompt and content to parse_categorization
     parsed_response = parse_categorization(categorization_prompt, content)
-    
+
     # Clean and parse the response
     return json.loads(parsed_response.strip("```json\n").strip("```"))
-
-# Example usage
-if __name__ == "__main__":
-    # Example URLs for categorization
-    urls = [
-        {
-            "url_id": "1",
-            "content": {
-                "url": "https://www.example.com/news/tech-updates",
-                "title": "Latest Tech News and Updates",
-                "raw": "Get the latest updates on technology, gadgets, and more..."
-            },
-            "timestamp": "2023-10-21T10:00:00Z"
-        },
-        {
-            "url_id": "2",
-            "content": {
-                "url": "https://www.example.com/fitness/workout-tips",
-                "title": "Top Workout Tips for Beginners",
-                "raw": "Discover effective workout routines and fitness advice for all levels."
-            },
-            "timestamp": "2023-10-21T10:05:00Z"
-        }
-    ]
-
-    result = categorize_urls(urls)
-    print(json.dumps(result, indent=2))
