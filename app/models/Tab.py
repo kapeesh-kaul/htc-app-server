@@ -8,6 +8,30 @@ from mongoengine import (
     StringField,
 )
 
+# Define the allowed categories
+CATEGORIES = [
+    "Social Media",
+    "News",
+    "Shopping",
+    "Entertainment",
+    "Education",
+    "Productivity",
+    "Communication",
+    "Finance",
+    "Search Engines",
+    "Health & Fitness",
+    "Real Estate",
+    "Travel & Navigation",
+    "Technology & Gadgets",
+    "Lifestyle",
+    "Government & Legal",
+    "Job Search",
+    "DIY & Hobbies",
+    "Automotive",
+    "Gaming",
+    "Other",
+]
+
 
 class MutedInfo(EmbeddedDocument):
     muted = BooleanField(required=True)
@@ -39,5 +63,6 @@ class Tab(Document):
     )
     width = IntField(default=0)
     windowId = IntField()
+    category = StringField(choices=CATEGORIES, default="Other")  # New category field
 
     meta = {"collection": "tabs"}

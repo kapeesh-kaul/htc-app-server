@@ -53,32 +53,67 @@ def categorize_urls(urls: List[Dict[str, Any]]) -> Dict[str, Any]:
         width?: number;
         windowId?: number;
     }
-
-    interface URLAssessment {
-      url_id: string;
-      content: URLData;
-      assessment: {
-        category: ("Social Media" | "News" | "Shopping" | "Entertainment" | "Education" | 
-                  "Productivity" | "Communication" | "Finance" | "Search Engines" | 
-                  "Health & Fitness" | "Real Estate" | "Travel & Navigation" | 
-                  "Technology & Gadgets" | "Lifestyle" | "Government & Legal" | 
-                  "Job Search" | "DIY & Hobbies" | "Automotive" | "Gaming" | "Other");
-        keywords: string[];
-        confidence_score: number;
-      };
-      timestamp: string;
-    }
-
-    interface URLCategorization {
-      analysis_timestamp: string;
-      total_urls_analyzed: number;
-      assessments: {
-        [key: string]: URLAssessment;
-      };
-    }
-
-    export default URLCategorization;
     \`\`\`
+
+    **Output Typescript interface**
+    \`\`\`
+    type Category = 
+        "Social Media" |
+        "News" |
+        "Shopping" |
+        "Entertainment" |
+        "Education" |
+        "Productivity" |
+        "Communication" |
+        "Finance" |
+        "Search Engines" |
+        "Health & Fitness" |
+        "Real Estate" |
+        "Travel & Navigation" |
+        "Technology & Gadgets" |
+        "Lifestyle" |
+        "Government & Legal" |
+        "Job Search" |
+        "DIY & Hobbies" |
+        "Automotive" |
+        "Gaming" |
+        "Other";
+
+    interface MutedInfo {
+        muted: boolean;
+    }
+
+    interface Tab {
+        userEmail: string;
+        id: number;
+        url: string;
+        title?: string;
+        active?: boolean;
+        timeStamp: number;
+        icon?: string;
+        audible?: boolean;
+        autoDiscardable?: boolean;
+        discarded?: boolean;
+        favIconUrl?: string;
+        groupId?: number;
+        height?: number;
+        highlighted?: boolean;
+        incognito?: boolean;
+        index?: number;
+        lastAccessed?: number;
+        mutedInfo?: MutedInfo;
+        pinned?: boolean;
+        selected?: boolean;
+        status?: "unloaded" | "loading" | "complete";
+        width?: number;
+        windowId?: number;
+        category: Category;  // New category field based on predefined categories
+    }
+    \`\`\`
+
+    You are a browser tab categorizer/classifier. Based on the input interface provided to you, 
+    you are expected to categorize each tab that is provided to you into the Category type. Provide the output strictly in 
+    JSON format with the additional field of category appended to the browser tabs. All other information should remain the same.
 
     **Assessment Guidelines:**
     Content categorization guidelines to check for:
