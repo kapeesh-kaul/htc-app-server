@@ -91,11 +91,37 @@
         <pre><code>{
     "analysis_timestamp": "2023-10-21T10:10:00Z",
     "total_messages_analyzed": 2,
-    "assessments": { ... }
+    "assessments": {
+        "1": {
+            "message_id": "1",
+            "content": "This is the first message.",
+            "assessment": {
+                "is_inappropriate": false,
+                "flags": [],
+                "feedback": "This message complies with community guidelines."
+            },
+            "timestamp": "2023-10-21T10:00:00Z"
+        },
+        "2": {
+            "message_id": "2",
+            "content": "This message might contain inappropriate content.",
+            "assessment": {
+                "is_inappropriate": true,
+                "flags": ["Sensitive Topics"],
+                "feedback": "This message discusses sensitive topics."
+            },
+            "timestamp": "2023-10-21T10:05:00Z"
+        }
+    }
 }</code></pre>
 
         <h4>JavaScript Example</h4>
-        <pre><code>const data = { text: [...] };
+        <pre><code>const data = {
+    text: [
+        "This is the first message.",
+        "This message might contain inappropriate content."
+    ]
+};
 
 fetch("http://https://htc-app-server.vercel.app/openai/verify_community_guidelines", {
     method: "POST",
@@ -119,21 +145,91 @@ fetch("http://https://htc-app-server.vercel.app/openai/verify_community_guidelin
         "messageId": "123",
         "content": "They are working on their project.",
         "timestamp": "2023-10-21T10:00:00Z",
-        "mentions": { ... }
+        "mentions": {
+            "user123": {
+                "startIndex": 0,
+                "endIndex": 4
+            }
+        }
     },
-    "users": { ... }
+    "users": {
+        "user123": {
+            "userId": "user123",
+            "username": "Alex",
+            "pronouns": {
+                "subject": "they",
+                "object": "them",
+                "possessive": "their",
+                "reflexive": "themselves"
+            }
+        }
+    }
 }</code></pre>
 
         <h4>Output Format</h4>
         <pre><code>{
-    "original": { "content": ... },
-    "processed": { "content": ... },
-    "users": { ... },
+    "original": {
+        "content": "They are working on their project.",
+        "mentions": ["user123"]
+    },
+    "processed": {
+        "content": "Alex is working on Alex's project.",
+        "replacements": [
+            {
+                "original": "They",
+                "replaced": "Alex",
+                "position": 0,
+                "userId": "user123"
+            },
+            {
+                "original": "their",
+                "replaced": "Alex's",
+                "position": 21,
+                "userId": "user123"
+            }
+        ]
+    },
+    "users": {
+        "user123": {
+            "userId": "user123",
+            "username": "Alex",
+            "pronouns": {
+                "subject": "they",
+                "object": "them",
+                "possessive": "their",
+                "reflexive": "themselves"
+            }
+        }
+    },
     "timestamp": "2023-10-21T10:00:00Z"
 }</code></pre>
 
         <h4>JavaScript Example</h4>
-        <pre><code>const data = { message_input: {...}, users: {...} };
+        <pre><code>const data = {
+    message_input: {
+        messageId: "123",
+        content: "They are working on their project.",
+        timestamp: "2023-10-21T10:00:00Z",
+        mentions: {
+            user123: {
+                startIndex: 0,
+                endIndex: 4
+            }
+        }
+    },
+    users: {
+        user123: {
+            userId: "user123",
+            username: "Alex",
+            pronouns: {
+                subject: "they",
+                object: "them",
+                possessive: "their",
+                reflexive: "themselves"
+            }
+        }
+    }
+};
 
 fetch("http://https://htc-app-server.vercel.app/openai/process_pronouns", {
     method: "POST",
@@ -145,18 +241,25 @@ fetch("http://https://htc-app-server.vercel.app/openai/process_pronouns", {
 .catch(error => console.error("Error:", error));</code></pre>
     </div>
 
-
-    <!-- 3. Chat Analysis -->
+    <!-- 3. Chat Moderation -->
     <div class="section">
-        <h3>3. Chat Analysis Endpoint</h3>
-        <p><strong>URL:</strong> <code>/openai/analyze_chat</code></p>
+        <h3>3. Chat Moderation Endpoint</h3>
+        <p><strong>URL:</strong> <code>/openai/moderate_chat</code></p>
         <p><strong>Method:</strong> POST</p>
 
         <h4>Input Format</h4>
         <pre><code>{
     "messages": [
-        { "message_id": "1", "context": ..., "timestamp": ... },
-        { "message_id": "2", "context": ..., "timestamp": ... }
+        {
+            "message_id": "1",
+            "content": "I don't like this topic.",
+            "timestamp": "2023-10-21T10:00:00Z"
+        },
+        {
+            "message_id": "2",
+            "content": "That was really disrespectful.",
+            "timestamp": "2023-10-21T10:05:00Z"
+        }
     ]
 }</code></pre>
 
@@ -164,11 +267,117 @@ fetch("http://https://htc-app-server.vercel.app/openai/process_pronouns", {
         <pre><code>{
     "analysis_timestamp": "2023-10-21T10:10:00Z",
     "total_messages_analyzed": 2,
-    "issues": { ... }
+    "assessments": {
+        "1": {
+            "message_id": "1",
+            "content": "I don't like this topic.",
+            "assessment": {
+                "is_inappropriate": false,
+                "flags": [],
+                "feedback": "This message complies with community guidelines."
+            },
+            "timestamp": "2023-10-21T10:00:00Z"
+        },
+        "2": {
+            "message_id": "2",
+            "content": "That was really disrespectful.",
+            "assessment": {
+                "is_inappropriate": true,
+                "flags": ["Disrespectful Language"],
+                "feedback": "This message contains disrespectful language."
+            },
+            "timestamp": "2023-10-21T10:05:00Z"
+        }
+    }
 }</code></pre>
 
         <h4>JavaScript Example</h4>
-        <pre><code>const data = { messages: [...] };
+        <pre><code>const data = {
+    messages: [
+        {
+            message_id: "1",
+            content: "I don't like this topic.",
+            timestamp: "2023-10-21T10:00:00Z"
+        },
+        {
+            message_id: "2",
+            content: "That was really disrespectful.",
+            timestamp: "2023-10-21T10:05:00Z"
+        }
+    ]
+};
+
+fetch("http://https://htc-app-server.vercel.app/openai/moderate_chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+})
+.then(response => response.json())
+.then(data => console.log("Response:", data))
+.catch(error => console.error("Error:", error));</code></pre>
+    </div>
+
+    <!-- 4. Chat Analysis -->
+    <div class="section">
+        <h3>4. Chat Analysis Endpoint</h3>
+        <p><strong>URL:</strong> <code>/openai/analyze_chat</code></p>
+        <p><strong>Method:</strong> POST</p>
+
+        <h4>Input Format</h4>
+        <pre><code>{
+    "messages": [
+        {
+            "message_id": "1",
+            "context": "I keep encountering a bug when trying to save my work.",
+            "timestamp": "2023-10-21T10:00:00Z"
+        },
+        {
+            "message_id": "2",
+            "context": "Is there a way to enable dark mode?",
+            "timestamp": "2023-10-21T10:05:00Z"
+        }
+    ]
+}</code></pre>
+
+        <h4>Output Format</h4>
+        <pre><code>{
+    "analysis_timestamp": "2023-10-21T10:10:00Z",
+    "total_messages_analyzed": 2,
+    "issues": {
+        "1": {
+            "category": "Feature Request",
+            "keyword": "dark mode",
+            "occurrence_count": 1,
+            "first_mentioned": "2023-10-21T10:05:00Z",
+            "last_mentioned": "2023-10-21T10:05:00Z",
+            "mentioned_by": ["user123"],
+            "priority_score": 8,
+            "sample_contexts": [
+                {
+                    "message_id": "2",
+                    "context": "Is there a way to enable dark mode?",
+                    "timestamp": "2023-10-21T10:05:00Z"
+                }
+            ]
+        }
+    }
+}</code></pre>
+
+        <h4>JavaScript Example</h4>
+        <pre><code>const data = {
+    messages: [
+        {
+            message_id: "1",
+            context: "I keep encountering a bug when trying to save my work.",
+            timestamp: "2023-10-21T10:00:00Z"
+        },
+        {
+            message_id: "2",
+            context: "Is there a way to enable dark mode?",
+            timestamp: "2023-10-21T10:05:00Z"
+        }
+    ]
+};
 
 fetch("http://https://htc-app-server.vercel.app/openai/analyze_chat", {
     method: "POST",
@@ -180,17 +389,33 @@ fetch("http://https://htc-app-server.vercel.app/openai/analyze_chat", {
 .catch(error => console.error("Error:", error));</code></pre>
     </div>
 
-    <!-- 4. URL Categorization -->
+    <!-- 5. URL Categorization -->
     <div class="section">
-        <h3>4. URL Categorization Endpoint</h3>
+        <h3>5. URL Categorization Endpoint</h3>
         <p><strong>URL:</strong> <code>/openai/categorize_urls</code></p>
         <p><strong>Method:</strong> POST</p>
 
         <h4>Input Format</h4>
         <pre><code>{
     "urls": [
-        { "url_id": "1", "content": { ... }, "timestamp": ... },
-        { "url_id": "2", "content": { ... }, "timestamp": ... }
+        {
+            "url_id": "1",
+            "content": {
+                "url": "https://www.example.com/news/tech-updates",
+                "title": "Latest Tech News and Updates",
+                "raw": "Get the latest updates on technology, gadgets, and more..."
+            },
+            "timestamp": "2023-10-21T10:00:00Z"
+        },
+        {
+            "url_id": "2",
+            "content": {
+                "url": "https://www.example.com/fitness/workout-tips",
+                "title": "Top Workout Tips for Beginners",
+                "raw": "Discover effective workout routines and fitness advice for all levels."
+            },
+            "timestamp": "2023-10-21T10:05:00Z"
+        }
     ]
 }</code></pre>
 
@@ -198,11 +423,61 @@ fetch("http://https://htc-app-server.vercel.app/openai/analyze_chat", {
         <pre><code>{
     "analysis_timestamp": "2023-10-21T10:10:00Z",
     "total_urls_analyzed": 2,
-    "assessments": { ... }
+    "assessments": {
+        "1": {
+            "url_id": "1",
+            "content": {
+                "url": "https://www.example.com/news/tech-updates",
+                "title": "Latest Tech News and Updates",
+                "raw": "Get the latest updates on technology, gadgets, and more..."
+            },
+            "assessment": {
+                "category": "News",
+                "keywords": ["tech", "news", "gadgets", "updates"],
+                "confidence_score": 0.95
+            },
+            "timestamp": "2023-10-21T10:00:00Z"
+        },
+        "2": {
+            "url_id": "2",
+            "content": {
+                "url": "https://www.example.com/fitness/workout-tips",
+                "title": "Top Workout Tips for Beginners",
+                "raw": "Discover effective workout routines and fitness advice for all levels."
+            },
+            "assessment": {
+                "category": "Health & Fitness",
+                "keywords": ["fitness", "workout", "tips"],
+                "confidence_score": 0.92
+            },
+            "timestamp": "2023-10-21T10:05:00Z"
+        }
+    }
 }</code></pre>
 
         <h4>JavaScript Example</h4>
-        <pre><code>const data = { urls: [...] };
+        <pre><code>const data = {
+    urls: [
+        {
+            url_id: "1",
+            content: {
+                url: "https://www.example.com/news/tech-updates",
+                title: "Latest Tech News and Updates",
+                raw: "Get the latest updates on technology, gadgets, and more..."
+            },
+            timestamp: "2023-10-21T10:00:00Z"
+        },
+        {
+            url_id: "2",
+            content: {
+                url: "https://www.example.com/fitness/workout-tips",
+                title: "Top Workout Tips for Beginners",
+                raw: "Discover effective workout routines and fitness advice for all levels."
+            },
+            timestamp: "2023-10-21T10:05:00Z"
+        }
+    ]
+};
 
 fetch("http://https://htc-app-server.vercel.app/openai/categorize_urls", {
     method: "POST",
