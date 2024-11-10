@@ -1,6 +1,9 @@
 from threading import Thread
 
+import numpy as np
+from dateutil import parser
 from flask import Blueprint, jsonify, request
+from mongoengine import DateTimeField, Document, IntField, StringField
 
 from app.models import Tab
 from app.models.Tab import MutedInfo
@@ -10,6 +13,7 @@ user_routes = Blueprint("user_routes", __name__)
 
 from collections import defaultdict
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 from bson import ObjectId
 
@@ -17,67 +21,121 @@ from app.models import Tab
 
 user_routes = Blueprint("user_routes", __name__)
 
+import os
 
-def aggregate_user_activity(user_id, past_week):
-    # Initialize structures to store category and daily screen time
-    category_time = defaultdict(float)
-    daily_screen_time = defaultdict(float)
+import pandas as pd
+from pymongo import MongoClient
+from sklearn.preprocessing import StandardScaler
 
-    # Iterate through each day of the past week
-    for day in past_week:
-        # Convert start and end times to Unix timestamps
-        start_timestamp = day["start"].timestamp()
-        end_timestamp = day["end"].timestamp()
 
-        # Query tabs for the specified user and time range
-        tabs = Tab.objects(
-            userEmail=user_id,
-            timeStamp__gte=start_timestamp,
-            timeStamp__lt=end_timestamp,
-        )
+# Function to calculate category durations
+def calculate_category_durations(user_id):
+    # Define the categories in the desired order
+    categories = [
+        "Social Media",
+        "News",
+        "Shopping",
+        "Entertainment",
+        "Education",
+        "Productivity",
+        "Communication",
+        "Finance",
+        "Search Engines",
+        "Health & Fitness",
+        "Real Estate",
+        "Travel & Navigation",
+        "Technology & Gadgets",
+        "Lifestyle",
+        "Government & Legal",
+        "Job Search",
+        "DIY & Hobbies",
+        "Automotive",
+        "Gaming",
+        "Other",
+    ]
 
-        # Iterate through tabs to compute category and daily time
-        for tab in tabs:
-            category = tab.category
-            default_view_time = (
-                10 * 60
-            )  # Assume 10 minutes (600 seconds) per tab as an example
+    # Query all tabs for the given user_id
+    user_tabs = Tab.objects(userEmail=user_id)
 
-            # Aggregate time spent on each category
-            category_time[category] += default_view_time
+    # Group by tabId to find the minimum and maximum timestamps for each tab
+    tab_durations = {}
+    for tab in user_tabs:
+        tab_id = tab.tabId
+        # Ensure timeStamp is a datetime object
+        if isinstance(tab.timeStamp, str):
+            tab.timeStamp = parser.isoparse(tab.timeStamp)
 
-            # Aggregate daily screen time
-            daily_screen_time[day["name"]] += default_view_time
+        if tab_id not in tab_durations:
+            tab_durations[tab_id] = {
+                "min": tab.timeStamp,
+                "max": tab.timeStamp,
+                "category": tab.category,
+            }
+        else:
+            if tab.timeStamp < tab_durations[tab_id]["min"]:
+                tab_durations[tab_id]["min"] = tab.timeStamp
+            if tab.timeStamp > tab_durations[tab_id]["max"]:
+                tab_durations[tab_id]["max"] = tab.timeStamp
 
-    return category_time, daily_screen_time
+    # Calculate duration for each tab and aggregate by category
+    category_durations = {category: timedelta(seconds=0) for category in categories}
+    for tab_id, times in tab_durations.items():
+        duration = times["max"] - times["min"]
+        category = times["category"] or "Other"
+        if category in category_durations:
+            category_durations[category] += duration
+
+    return category_durations
+
+
+# Function to vectorize and scale category durations
+def vectorize_category_durations(category_durations):
+    # Convert durations to seconds for scaling
+    category_durations_seconds = np.array(
+        [d.total_seconds() for d in category_durations.values()]
+    )
+
+    # Perform standard scaling
+    scaler = StandardScaler()
+    category_durations_scaled = scaler.fit_transform(
+        category_durations_seconds.reshape(-1, 1)
+    )
+
+    # Convert to a dictionary for return
+    categories = list(category_durations.keys())
+    category_durations_scaled_dict = dict(
+        zip(categories, category_durations_scaled.flatten())
+    )
+
+    return category_durations_scaled_dict
+
+
+# Main function to aggregate user activity
+def aggregate_user_activity(user_id):
+    category_durations = calculate_category_durations(user_id)
+
+    # Convert timedelta durations to seconds for JSON serialization
+    category_durations_json = {
+        category: duration.total_seconds()
+        for category, duration in category_durations.items()
+    }
+
+    return category_durations_json
 
 
 @user_routes.route("/user_activity_summary/<string:user_id>", methods=["GET"])
 def user_activity_summary(user_id):
     try:
         # Define the past week date range
-        today = datetime.now()
-        past_week = [
-            {
-                "name": (today - timedelta(days=i)).strftime("%A"),
-                "start": (today - timedelta(days=i)).replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                ),
-                "end": (today - timedelta(days=i)).replace(
-                    hour=23, minute=59, second=59, microsecond=999999
-                ),
-            }
-            for i in range(7)
-        ]
+        print(user_id)
 
         # Aggregate data
-        category_time, daily_screen_time = aggregate_user_activity(user_id, past_week)
+        category_durations = aggregate_user_activity(user_id)
+
+        print(category_durations)
 
         # Prepare response
-        response = {
-            "category_time": dict(category_time),
-            "daily_screen_time": dict(daily_screen_time),
-        }
+        response = category_durations
 
         return jsonify(response), 200
 
@@ -94,64 +152,106 @@ def user_activity_summary(user_id):
         )
 
 
-# def categorize_and_store_tabs(tabs_data, user_token, timestamp):
-#     try:
-#         # Directly categorize tabs using the provided function
-#         for i, tab in enumerate(tabs_data):
-#             del tab["content"]
+# Function to calculate URL durations
+def calculate_url_durations(user_id):
+    # Query all tabs for the given user_id
+    user_tabs = Tab.objects(userEmail=user_id)
 
-#         categorized_tabs = categorize_urls(tabs_data)
-#         # categorized_tabs = []
-#         print(categorized_tabs)
+    # Group by tabId to find the minimum and maximum timestamps for each URL
+    url_durations = {}
+    for tab in user_tabs:
+        tab_id = tab.tabId
+        url = tab.url
+        favicon_url = tab.favIconUrl  # Assuming Tab has a field faviconUrl
 
-#         # Loop through each categorized tab and store it in MongoDB
-#         for i, tab_data in enumerate(categorized_tabs):
-#             if not isinstance(tab_data, dict):
-#                 print(f"Skipping invalid tab data format: {tab_data}")
-#                 continue
+        # Ensure timeStamp is a datetime object
+        if isinstance(tab.timeStamp, str):
+            tab.timeStamp = parser.isoparse(tab.timeStamp)
 
-#             # Get category from categorized data
-#             category = tab_data.get("category", "Other")
+        if tab_id not in url_durations:
+            url_durations[tab_id] = {
+                "min": tab.timeStamp,
+                "max": tab.timeStamp,
+                "url": url,
+                "favicons": {favicon_url},
+            }
+        else:
+            if tab.timeStamp < url_durations[tab_id]["min"]:
+                url_durations[tab_id]["min"] = tab.timeStamp
+            if tab.timeStamp > url_durations[tab_id]["max"]:
+                url_durations[tab_id]["max"] = tab.timeStamp
+            url_durations[tab_id]["favicons"].add(favicon_url)
 
-#             # Handle mutedInfo, ensuring it's correctly structured
-#             muted_info_data = tab_data.get("mutedInfo")
-#             if isinstance(muted_info_data, list) and len(muted_info_data) > 0:
-#                 muted = muted_info_data[0] if muted_info_data[0] is not None else False
-#             else:
-#                 muted = False
+    # Calculate duration for each URL
+    url_duration_dict = defaultdict(
+        lambda: {"duration": timedelta(), "favicons": set()}
+    )
+    for tab_id, times in url_durations.items():
+        duration = times["max"] - times["min"]
+        url = times["url"]
+        url_duration_dict[url]["duration"] += duration
+        url_duration_dict[url]["favicons"].update(times["favicons"])
 
-#             # Save the tab with categorization to the Tab collection
-#             tab = Tab(
-#                 userEmail=user_token,
-#                 tabId=tab_data.get("id", 0),  # Default id to 0 if missing
-#                 url=tab_data.get("url", ""),
-#                 title=tab_data.get("title", ""),
-#                 active=tab_data.get("active", False),
-#                 timeStamp=timestamp,
-#                 icon=tab_data.get("favIconUrl", ""),
-#                 audible=tab_data.get("audible", False),
-#                 autoDiscardable=tab_data.get("autoDiscardable", True),
-#                 discarded=tab_data.get("discarded", False),
-#                 favIconUrl=tab_data.get("favIconUrl", ""),
-#                 groupId=tab_data.get("groupId", -1),
-#                 height=tab_data.get("height", 0),
-#                 highlighted=tab_data.get("highlighted", False),
-#                 incognito=tab_data.get("incognito", False),
-#                 index=tab_data.get("index", 0),
-#                 lastAccessed=tab_data.get("lastAccessed", 0),
-#                 mutedInfo=MutedInfo(muted=muted),
-#                 pinned=tab_data.get("pinned", False),
-#                 selected=tab_data.get("selected", False),
-#                 status=tab_data.get("status", "unloaded"),
-#                 width=tab_data.get("width", 0),
-#                 windowId=tab_data.get("windowId", 0),
-#                 category=category,
-#             )
-#             tab.save()
+    return url_duration_dict
 
-#         print("Background task completed: All tabs categorized and stored.")
-#     except Exception as e:
-#         print(f"Error in background task: {e}")
+
+# Function to calculate domain durations from URL durations
+def calculate_domain_durations(url_durations):
+    domain_durations = defaultdict(lambda: {"duration": timedelta(), "favicons": set()})
+
+    for url, data in url_durations.items():
+        domain = urlparse(url).netloc
+        domain_durations[domain]["duration"] += data["duration"]
+        domain_durations[domain]["favicons"].update(data["favicons"])
+
+    # Sort by descending duration
+    sorted_domain_durations = sorted(
+        domain_durations.items(), key=lambda x: x[1]["duration"], reverse=True
+    )
+
+    # Convert to list of dictionaries for JSON serialization
+    domain_durations_list = [
+        {
+            "domain": domain,
+            "duration": data["duration"].total_seconds(),
+            "favUrls": list(data["favicons"]),
+        }
+        for domain, data in sorted_domain_durations
+    ]
+
+    return domain_durations_list
+
+
+# Function to aggregate user activity for domain durations
+def aggregate_user_domain_activity(user_id):
+    url_durations = calculate_url_durations(user_id)
+    domain_durations = calculate_domain_durations(url_durations)
+    return domain_durations
+
+
+@user_routes.route("/user_domain_summary/<string:user_id>", methods=["GET"])
+def user_domain_summary(user_id):
+    try:
+        # Aggregate data
+        domain_durations = aggregate_user_domain_activity(user_id)
+
+        # Prepare response
+        response = domain_durations
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        print(f"Error in user_domain_summary: {e}")
+        return (
+            jsonify(
+                {
+                    "error": "An error occurred while processing the request",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
+
 
 # Domain to Category Mapping Dictionary
 domain_category_mapping = {
